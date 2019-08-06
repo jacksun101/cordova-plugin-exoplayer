@@ -58,6 +58,7 @@ import java.lang.Math;
 import java.lang.Override;
 import org.apache.cordova.*;
 import org.json.*;
+import java.util.UUID;
 
 public class Player {
     public static final String TAG = "ExoPlayerPlugin";
@@ -268,7 +269,7 @@ public class Player {
             UUID drmSchemeUuid = Util.getDrmUuid(drmScheme);
             drmSessionManager =
                   buildDrmSessionManagerV18(
-                      drmSchemeUuid, drmLicenseUrl, keyRequestPropertiesArray, multiSession, requestHeaders);
+                      drmSchemeUuid, drmLicenseUrl, multiSession, requestHeaders);
         }
      
         DefaultBandwidthMeter bandwidthMeter = new DefaultBandwidthMeter();
@@ -469,22 +470,22 @@ public class Player {
     }
  
     private DefaultDrmSessionManager<FrameworkMediaCrypto> buildDrmSessionManagerV18(
-         UUID uuid, String licenseUrl, String[] keyRequestPropertiesArray, boolean multiSession, String[] requestHeaders)
+         UUID uuid, String licenseUrl, boolean multiSession, String[] requestHeaders)
          throws UnsupportedDrmException {
        HttpDataSource.Factory licenseDataSourceFactory = new DefaultHttpDataSourceFactory(userAgent);
        if (requestHeaders != null)
        {
-          for (int cnt = 0; cnt < requestHeaders.length; cnt += 2)
+          for (int cnt = 0; cnt < requestHeaders.length - 1; cnt += 2)
           {
              httpDataSourceFactory.getDefaultRequestProperties().set(requestHeaders[cnt], requestHeaders[cnt + 1]);
           }
        }
        HttpMediaDrmCallback drmCallback =
            new HttpMediaDrmCallback(licenseUrl, licenseDataSourceFactory);
-       if (keyRequestPropertiesArray != null) {
-         for (int i = 0; i < keyRequestPropertiesArray.length - 1; i += 2) {
-           drmCallback.setKeyRequestProperty(keyRequestPropertiesArray[i],
-               keyRequestPropertiesArray[i + 1]);
+       if (requestHeaders != null) {
+         for (int i = 0; i < requestHeaders.length - 1; i += 2) {
+           drmCallback.setKeyRequestProperty(requestHeaders[i],
+               requestHeaders[i + 1]);
          }
        }
        releaseMediaDrm();
