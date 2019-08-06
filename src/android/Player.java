@@ -217,7 +217,7 @@ public class Player {
         }
     };
 
-    public void createPlayer() {
+    public void createPlayer() throws UnsupportedDrmException {
         if (!config.isAudioOnly()) {
             createDialog();
         }
@@ -259,38 +259,35 @@ public class Player {
         return audioManager.requestAudioFocus(audioFocusChangeListener, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN);
     }
 
-    private void preparePlayer(Uri uri, String drmScheme, String drmLicenseUrl, boolean multiSession, String[] requestHeaders) {
+    private void preparePlayer(Uri uri, String drmScheme, String drmLicenseUrl, boolean multiSession, String[] requestHeaders) throws UnsupportedDrmException {
         int audioFocusResult = setupAudio();
         boolean isDrmEnabled = drmScheme != null && drmLicenseUrl != null;
         String audioFocusString = audioFocusResult == AudioManager.AUDIOFOCUS_REQUEST_FAILED ?
                 "AUDIOFOCUS_REQUEST_FAILED" :
                 "AUDIOFOCUS_REQUEST_GRANTED";
-     
-        DefaultDrmSessionManager<FrameworkMediaCrypto> drmSessionManager = null;
-        if (isDrmEnabled)
-        {
-            UUID drmSchemeUuid = Util.getDrmUuid(drmScheme);
-            drmSessionManager =
-                  buildDrmSessionManagerV18(
-                      drmSchemeUuid, drmLicenseUrl, multiSession, requestHeaders);
-        }
-     
+          
         DefaultBandwidthMeter bandwidthMeter = new DefaultBandwidthMeter();
         //TrackSelection.Factory videoTrackSelectionFactory = new AdaptiveVideoTrackSelection.Factory(bandwidthMeter);
         //TrackSelector trackSelector = new DefaultTrackSelector();
         TrackSelection.Factory trackSelectionFactory = new AdaptiveTrackSelection.Factory();
         DefaultTrackSelector trackSelector = new DefaultTrackSelector(trackSelectionFactory);
         LoadControl loadControl;
-        if (isDrmEnabled)
-           loadControl = new DefaultLoadControl();
 
         if (isDrmEnabled)
         {
-           RenderersFactory renderersFactory = new DefaultRenderersFactory(this.activity).setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_OFF);
-           exoPlayer = ExoPlayerFactory.newSimpleInstance(this.activity, trackSelector, loadControl);
+            DefaultDrmSessionManager<FrameworkMediaCrypto> drmSessionManager = null;
+            UUID drmSchemeUuid = Util.getDrmUuid(drmScheme);
+            drmSessionManager =
+                  buildDrmSessionManagerV18(
+                      drmSchemeUuid, drmLicenseUrl, multiSession, requestHeaders);
+            RenderersFactory renderersFactory = new DefaultRenderersFactory(this.activity).setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_OFF);
+            exoPlayer = ExoPlayerFactory.newSimpleInstance(this.activity, renderersFactory, trackSelector, drmSessionManager);
         }
         else
-           exoPlayer = ExoPlayerFactory.newSimpleInstance(this.activity, trackSelector, loadControl);
+        {
+            loadControl = new DefaultLoadControl();
+            exoPlayer = ExoPlayerFactory.newSimpleInstance(this.activity, trackSelector, loadControl);
+        }
         exoPlayer.addListener(playerEventListener);
         if (null != exoView) {
             exoView.setPlayer(exoPlayer);
