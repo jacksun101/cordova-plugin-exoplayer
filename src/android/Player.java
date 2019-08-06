@@ -281,7 +281,13 @@ public class Player {
         if (isDrmEnabled)
            loadControl = new DefaultLoadControl();
 
-        exoPlayer = ExoPlayerFactory.newSimpleInstance(this.activity, trackSelector, isDrmEnabled ? drmSessionManager : loadControl);
+        if (isDrmEnabled)
+        {
+           RenderersFactory renderersFactory = new DefaultRenderersFactory(this.activity).setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_OFF);
+           exoPlayer = ExoPlayerFactory.newSimpleInstance(this.activity, trackSelector, loadControl);
+        }
+        else
+           exoPlayer = ExoPlayerFactory.newSimpleInstance(this.activity, trackSelector, loadControl);
         exoPlayer.addListener(playerEventListener);
         if (null != exoView) {
             exoView.setPlayer(exoPlayer);
