@@ -393,7 +393,7 @@ public class Player {
     public void setStream(Uri uri, JSONObject controller) {
         if (null != uri && null != exoPlayer) {
             DefaultBandwidthMeter bandwidthMeter = new DefaultBandwidthMeter();
-            MediaSource mediaSource = getMediaSource(uri, bandwidthMeter);
+            MediaSource mediaSource = getMediaSource(uri, bandwidthMeter, config.getRequestHeaders());
             exoPlayer.prepare(mediaSource);
             play();
         }
@@ -478,7 +478,7 @@ public class Player {
     private DefaultDrmSessionManager<FrameworkMediaCrypto> buildDrmSessionManagerV18(
          UUID uuid, String licenseUrl, boolean multiSession, String[] requestHeaders)
          throws UnsupportedDrmException {
-       HttpDataSource.Factory licenseDataSourceFactory = new DefaultHttpDataSourceFactory(userAgent);
+       HttpDataSource.Factory licenseDataSourceFactory = new DefaultHttpDataSourceFactory(config.getUserAgent());
        if (requestHeaders != null)
        {
           for (int cnt = 0; cnt < requestHeaders.length - 1; cnt += 2)
