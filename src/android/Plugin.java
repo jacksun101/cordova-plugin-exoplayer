@@ -27,6 +27,7 @@ import android.net.*;
 import android.view.ViewGroup;
 import org.apache.cordova.*;
 import org.json.*;
+import com.google.android.exoplayer2.drm.UnsupportedDrmException;
 
 public class Plugin extends CordovaPlugin {
     private Player player;
@@ -43,8 +44,15 @@ public class Plugin extends CordovaPlugin {
                         }
                         JSONObject params = data.optJSONObject(0);
                         self.player = new Player(new Configuration(params), cordova.getActivity(), callbackContext, webView);
-                        self.player.createPlayer();
-                        new CallbackResponse(callbackContext).send(PluginResult.Status.NO_RESULT, true);
+                        try
+                        {
+                            self.player.createPlayer();
+                            new CallbackResponse(callbackContext).send(PluginResult.Status.NO_RESULT, true);
+                        }
+                        catch (UnsupportedDrmException ude)
+                        {
+                            new CallbackResponse(callbackContext).send(PluginResult.Status.ERROR, true);
+                        }
                     }
                 });
                 return true;
