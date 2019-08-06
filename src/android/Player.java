@@ -41,6 +41,17 @@ import com.google.android.exoplayer2.trackselection.*;
 import com.google.android.exoplayer2.ui.*;
 import com.google.android.exoplayer2.upstream.*;
 import com.google.android.exoplayer2.util.*;
+import com.google.android.exoplayer2.drm.DefaultDrmSessionManager;
+import com.google.android.exoplayer2.drm.FrameworkMediaCrypto;
+import com.google.android.exoplayer2.drm.FrameworkMediaDrm;
+import com.google.android.exoplayer2.drm.HttpMediaDrmCallback;
+import com.google.android.exoplayer2.drm.UnsupportedDrmException;
+import com.google.android.exoplayer2.trackselection.AdaptiveTrackSelection;
+import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
+import com.google.android.exoplayer2.trackselection.MappingTrackSelector.MappedTrackInfo;
+import com.google.android.exoplayer2.trackselection.RandomTrackSelection;
+import com.google.android.exoplayer2.trackselection.TrackSelection;
+import com.google.android.exoplayer2.trackselection.TrackSelectionArray;
 import com.squareup.picasso.*;
 import java.lang.*;
 import java.lang.Math;
@@ -60,6 +71,7 @@ public class Player {
     private int controllerVisibility;
     private boolean paused = false;
     private AudioManager audioManager;
+    private FrameworkMediaDrm mediaDrm;
 
     public Player(Configuration config, Activity activity, CallbackContext callbackContext, CordovaWebView webView) {
         this.config = config;
@@ -205,7 +217,7 @@ public class Player {
         if (!config.isAudioOnly()) {
             createDialog();
         }
-        preparePlayer(config.getUri());
+        preparePlayer(config.getUri(), config.getDrmScheme(), config.getDrmUrl(), config.getDrmMultiSession(), config.getRequestHeaders());
     }
 
     public void createDialog() {
@@ -243,30 +255,45 @@ public class Player {
         return audioManager.requestAudioFocus(audioFocusChangeListener, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN);
     }
 
-    private void preparePlayer(Uri uri) {
+    private void preparePlayer(Uri uri, String drmScheme, String drmLicenseUrl, boolean multiSession, String[] requestHeaders) {
         int audioFocusResult = setupAudio();
+        boolean isDrmEnabled = drmScheme != null && drmLicenseUrl != null;
         String audioFocusString = audioFocusResult == AudioManager.AUDIOFOCUS_REQUEST_FAILED ?
                 "AUDIOFOCUS_REQUEST_FAILED" :
                 "AUDIOFOCUS_REQUEST_GRANTED";
+     
+        DefaultDrmSessionManager<FrameworkMediaCrypto> drmSessionManager = null;
+        if (isDrmEnabled)
+        {
+            UUID drmSchemeUuid = Util.getDrmUuid(drmScheme);
+            drmSessionManager =
+                  buildDrmSessionManagerV18(
+                      drmSchemeUuid, drmLicenseUrl, keyRequestPropertiesArray, multiSession, requestHeaders);
+        }
+     
         DefaultBandwidthMeter bandwidthMeter = new DefaultBandwidthMeter();
         //TrackSelection.Factory videoTrackSelectionFactory = new AdaptiveVideoTrackSelection.Factory(bandwidthMeter);
-        TrackSelector trackSelector = new DefaultTrackSelector();
-        LoadControl loadControl = new DefaultLoadControl();
+        //TrackSelector trackSelector = new DefaultTrackSelector();
+        TrackSelection.Factory trackSelectionFactory = new AdaptiveTrackSelection.Factory();
+        DefaultTrackSelector trackSelector = new DefaultTrackSelector(trackSelectionFactory);
+        LoadControl loadControl;
+        if (isDrmEnabled)
+           loadControl = new DefaultLoadControl();
 
-        exoPlayer = ExoPlayerFactory.newSimpleInstance(this.activity, trackSelector, loadControl);
+        exoPlayer = ExoPlayerFactory.newSimpleInstance(this.activity, trackSelector, isDrmEnabled ? drmSessionManager : loadControl);
         exoPlayer.addListener(playerEventListener);
         if (null != exoView) {
             exoView.setPlayer(exoPlayer);
         }
 
-        MediaSource mediaSource = getMediaSource(uri, bandwidthMeter);
+        MediaSource mediaSource = getMediaSource(uri, bandwidthMeter, requestHeaders);
         if (mediaSource != null) {
             long offset = config.getSeekTo();
             boolean autoPlay = config.autoPlay();
             if (offset > -1) {
                 exoPlayer.seekTo(offset);
             }
-            exoPlayer.prepare(mediaSource);
+            exoPlayer.prepare(mediaSource, !(offset > -1), false);
 
             exoPlayer.setPlayWhenReady(autoPlay);
             paused = !autoPlay;
@@ -279,7 +306,7 @@ public class Player {
         }
     }
 
-    private MediaSource getMediaSource(Uri uri, DefaultBandwidthMeter bandwidthMeter) {
+    private MediaSource getMediaSource(Uri uri, DefaultBandwidthMeter bandwidthMeter, String[] requestHeaders) {
         String userAgent = Util.getUserAgent(this.activity, config.getUserAgent());
         Handler mainHandler = new Handler();
         int connectTimeout = config.getConnectTimeout();
@@ -287,6 +314,13 @@ public class Player {
         int retryCount = config.getRetryCount();
 
         HttpDataSource.Factory httpDataSourceFactory = new DefaultHttpDataSourceFactory(userAgent, bandwidthMeter, connectTimeout, readTimeout, true);
+        if (requestHeaders != null)
+        {
+           for (int cnt = 0; cnt < requestHeaders.length; cnt += 2)
+           {
+              httpDataSourceFactory.getDefaultRequestProperties().set(requestHeaders[cnt], requestHeaders[cnt + 1]);
+           }
+        }
         DataSource.Factory dataSourceFactory = new DefaultDataSourceFactory(this.activity, bandwidthMeter, httpDataSourceFactory);
         MediaSource mediaSource;
         int type = Util.inferContentType(uri);
@@ -432,5 +466,36 @@ public class Player {
         Log.e(TAG, msg);
         JSONObject payload = Payload.playerErrorEvent(Player.this.exoPlayer, null, msg);
         new CallbackResponse(Player.this.callbackContext).send(PluginResult.Status.ERROR, payload, true);
-    }   
+    }
+ 
+    private DefaultDrmSessionManager<FrameworkMediaCrypto> buildDrmSessionManagerV18(
+         UUID uuid, String licenseUrl, String[] keyRequestPropertiesArray, boolean multiSession, String[] requestHeaders)
+         throws UnsupportedDrmException {
+       HttpDataSource.Factory licenseDataSourceFactory = new DefaultHttpDataSourceFactory(userAgent);
+       if (requestHeaders != null)
+       {
+          for (int cnt = 0; cnt < requestHeaders.length; cnt += 2)
+          {
+             httpDataSourceFactory.getDefaultRequestProperties().set(requestHeaders[cnt], requestHeaders[cnt + 1]);
+          }
+       }
+       HttpMediaDrmCallback drmCallback =
+           new HttpMediaDrmCallback(licenseUrl, licenseDataSourceFactory);
+       if (keyRequestPropertiesArray != null) {
+         for (int i = 0; i < keyRequestPropertiesArray.length - 1; i += 2) {
+           drmCallback.setKeyRequestProperty(keyRequestPropertiesArray[i],
+               keyRequestPropertiesArray[i + 1]);
+         }
+       }
+       releaseMediaDrm();
+       mediaDrm = FrameworkMediaDrm.newInstance(uuid);
+       return new DefaultDrmSessionManager<>(uuid, mediaDrm, drmCallback, null, multiSession);
+     }
+ 
+    private void releaseMediaDrm() {
+      if (mediaDrm != null) {
+        mediaDrm.release();
+        mediaDrm = null;
+      }
+    }
 }
