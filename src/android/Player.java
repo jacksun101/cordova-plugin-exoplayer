@@ -129,7 +129,7 @@ public class Player {
         }
 
         @Override
-        public void onTimelineChanged(Timeline timeline, Object manifest) {
+        public void onTimelineChanged(Timeline timeline, Object manifest, int reason) {
             JSONObject payload = Payload.timelineChangedEvent(Player.this.exoPlayer, timeline, manifest);
             new CallbackResponse(Player.this.callbackContext).send(PluginResult.Status.OK, payload, true);
         }
@@ -340,7 +340,8 @@ public class Player {
                 break;
             case C.TYPE_HLS:
                 // Last param is AdaptiveMediaSourceEventListener
-                mediaSource = new HlsMediaSource(uri, dataSourceFactory, retryCount, mainHandler, null);
+                //mediaSource = new HlsMediaSource(uri, dataSourceFactory, retryCount, mainHandler, null);
+                mediaSource = new HlsMediaSource.Factory(dataSourceFactory).createMediaSource(uri);
                 break;
             case C.TYPE_SS:
                 DefaultSsChunkSource.Factory ssChunkSourceFactory = new DefaultSsChunkSource.Factory(dataSourceFactory);
