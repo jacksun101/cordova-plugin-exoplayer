@@ -26,6 +26,11 @@ package co.frontyard.cordova.plugin.exoplayer;
 import android.net.*;
 import android.view.*;
 import org.json.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Iterator;
 
 public class Configuration {
     private final JSONObject config;
@@ -102,7 +107,21 @@ public class Configuration {
         return config.optString("drmUrl", null);
     }
  
-     public final JSONObject getRequestHeaders() {
-        return config.optJSONObject("requestHeaders");
+     public String getDrmScheme() {
+        return config.optString("drmScheme", null);
+    }
+ 
+     public final String[] getRequestHeaders() {
+        JSONObject headersParam = config.optJSONObject("requestHeaders");
+        ArrayList<String> requestHeaders = new ArrayList<>();
+        Iterator<String> itr = headersParam.keys();
+        String key;
+        while(itr.hasNext())
+        {
+           key = itr.next();
+           requestHeaders.add(key);
+           requestHeaders.add(headersParam.optString(key));
+        }
+        return requestHeaders.toArray(new String[0]);
     }
 }
