@@ -97,4 +97,12 @@ public class Configuration {
     public boolean getShowBuffering() {
         return config.optBoolean("showBuffering");
     }
+ 
+    public String getDrmUrl() {
+        return config.optString("drmUrl", null);
+    }
+ 
+     public final JSONObject getRequestHeaders() {
+        return config.optJSONObject("requestHeaders");
+    }
 }
