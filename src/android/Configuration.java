@@ -124,4 +124,8 @@ public class Configuration {
         }
         return requestHeaders.toArray(new String[0]);
     }
+ 
+     public boolean getDrmMultiSession() {
+        return config.optBoolean("multiSession");
+    }
 }
