@@ -483,7 +483,7 @@ public class Player {
        {
           for (int cnt = 0; cnt < requestHeaders.length - 1; cnt += 2)
           {
-             httpDataSourceFactory.getDefaultRequestProperties().set(requestHeaders[cnt], requestHeaders[cnt + 1]);
+             licenseDataSourceFactory.getDefaultRequestProperties().set(requestHeaders[cnt], requestHeaders[cnt + 1]);
           }
        }
        HttpMediaDrmCallback drmCallback =
