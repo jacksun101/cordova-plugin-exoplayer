@@ -28,9 +28,11 @@ import android.view.ViewGroup;
 import org.apache.cordova.*;
 import org.json.*;
 import com.google.android.exoplayer2.drm.UnsupportedDrmException;
+import android.util.Log;
 
 public class Plugin extends CordovaPlugin {
     private Player player;
+    private static final String TAG = "ExoPlayerPlugin";
 
     @Override
     public boolean execute(final String action, final JSONArray data, final CallbackContext callbackContext) throws JSONException {
@@ -51,6 +53,8 @@ public class Plugin extends CordovaPlugin {
                         }
                         catch (UnsupportedDrmException ude)
                         {
+                            Log.e(TAG, "UnsupportedDrmException : " + ude.toString());
+                            ude.printStackTrace();
                             new CallbackResponse(callbackContext).send(PluginResult.Status.ERROR, true);
                         }
                     }
