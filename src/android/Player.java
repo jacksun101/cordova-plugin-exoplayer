@@ -323,7 +323,7 @@ public class Player {
         HttpDataSource.Factory httpDataSourceFactory = new DefaultHttpDataSourceFactory(userAgent, bandwidthMeter, connectTimeout, readTimeout, true);
         if (requestHeaders != null)
         {
-           for (int cnt = 0; cnt < requestHeaders.length; cnt += 2)
+           for (int cnt = 0; cnt < requestHeaders.length - 1; cnt += 2)
            {
               httpDataSourceFactory.getDefaultRequestProperties().set(requestHeaders[cnt], requestHeaders[cnt + 1]);
            }
@@ -333,20 +333,26 @@ public class Player {
         int type = Util.inferContentType(uri);
         switch (type) {
             case C.TYPE_DASH:
-                long livePresentationDelayMs = DashMediaSource.DEFAULT_LIVE_PRESENTATION_DELAY_PREFER_MANIFEST_MS;
+                /*long livePresentationDelayMs = DashMediaSource.DEFAULT_LIVE_PRESENTATION_DELAY_PREFER_MANIFEST_MS;
                 DefaultDashChunkSource.Factory dashChunkSourceFactory = new DefaultDashChunkSource.Factory(dataSourceFactory);
                 // Last param is AdaptiveMediaSourceEventListener
-                mediaSource = new DashMediaSource(uri, dataSourceFactory, dashChunkSourceFactory, retryCount, livePresentationDelayMs, mainHandler, null);
+                mediaSource = new DashMediaSource(uri, dataSourceFactory, dashChunkSourceFactory, retryCount, livePresentationDelayMs, mainHandler, null);*/
+                mediaSource = new DashMediaSource.Factory(dataSourceFactory).createMediaSource(uri);
                 break;
             case C.TYPE_HLS:
-                // Last param is AdaptiveMediaSourceEventListener
+                /*// Last param is AdaptiveMediaSourceEventListener
                 //mediaSource = new HlsMediaSource(uri, dataSourceFactory, retryCount, mainHandler, null);
+                mediaSource = new HlsMediaSource.Factory(dataSourceFactory).createMediaSource(uri);*/
                 mediaSource = new HlsMediaSource.Factory(dataSourceFactory).createMediaSource(uri);
                 break;
             case C.TYPE_SS:
-                DefaultSsChunkSource.Factory ssChunkSourceFactory = new DefaultSsChunkSource.Factory(dataSourceFactory);
+                /*DefaultSsChunkSource.Factory ssChunkSourceFactory = new DefaultSsChunkSource.Factory(dataSourceFactory);
                 // Last param is AdaptiveMediaSourceEventListener
-                mediaSource = new SsMediaSource(uri, dataSourceFactory, ssChunkSourceFactory, mainHandler, null);
+                mediaSource = new SsMediaSource(uri, dataSourceFactory, ssChunkSourceFactory, mainHandler, null);*/
+                mediaSource = new SsMediaSource.Factory(dataSourceFactory).createMediaSource(uri);
+                break;
+            case C.TYPE_OTHER:
+                mediaSource = new ProgressiveMediaSource.Factory(dataSourceFactory).createMediaSource(uri);
                 break;
             default:
                 ExtractorsFactory extractorsFactory = new DefaultExtractorsFactory();
