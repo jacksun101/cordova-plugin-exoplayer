@@ -113,16 +113,20 @@ public class Configuration {
  
      public final String[] getRequestHeaders() {
         JSONObject headersParam = config.optJSONObject("requestHeaders");
-        ArrayList<String> requestHeaders = new ArrayList<>();
-        Iterator<String> itr = headersParam.keys();
-        String key;
-        while(itr.hasNext())
-        {
-           key = itr.next();
-           requestHeaders.add(key);
-           requestHeaders.add(headersParam.optString(key));
+        if (headersParam != null) {
+            ArrayList<String> requestHeaders = new ArrayList<>();
+            Iterator<String> itr = headersParam.keys();
+            String key;
+            while(itr.hasNext())
+            {
+                key = itr.next();
+                requestHeaders.add(key);
+                requestHeaders.add(headersParam.optString(key));
+            }
+            return requestHeaders.toArray(new String[0]);
+        } else {
+            return null;
         }
-        return requestHeaders.toArray(new String[0]);
     }
  
      public boolean getDrmMultiSession() {
