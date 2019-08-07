@@ -314,7 +314,8 @@ public class Player {
     }
 
     private MediaSource getMediaSource(Uri uri, DefaultBandwidthMeter bandwidthMeter, String[] requestHeaders) {
-        String userAgent = Util.getUserAgent(this.activity, config.getUserAgent());
+        //String userAgent = Util.getUserAgent(this.activity, config.getUserAgent());
+        String userAgent = config.getUserAgent();
         Handler mainHandler = new Handler();
         int connectTimeout = config.getConnectTimeout();
         int readTimeout = config.getReadTimeout();
