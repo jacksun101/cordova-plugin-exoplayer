@@ -132,4 +132,8 @@ public class Configuration {
      public boolean getDrmMultiSession() {
         return config.optBoolean("multiSession");
     }
+
+    public String getPreferredAudioLanguage() {
+        return config.optString("preferredAudioLanguage", null);
+    }
 }
