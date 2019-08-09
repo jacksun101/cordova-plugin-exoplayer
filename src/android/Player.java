@@ -221,7 +221,7 @@ public class Player {
         if (!config.isAudioOnly()) {
             createDialog();
         }
-        preparePlayer(config.getUri(), config.getDrmScheme(), config.getDrmUrl(), config.getDrmMultiSession(), config.getRequestHeaders());
+        preparePlayer(config.getUri(), config.getDrmScheme(), config.getDrmUrl(), config.getDrmMultiSession(), config.getRequestHeaders(), config.getPreferredAudioLanguage());
     }
 
     public void createDialog() {
@@ -259,7 +259,7 @@ public class Player {
         return audioManager.requestAudioFocus(audioFocusChangeListener, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN);
     }
 
-    private void preparePlayer(Uri uri, String drmScheme, String drmLicenseUrl, boolean multiSession, String[] requestHeaders) throws UnsupportedDrmException {
+    private void preparePlayer(Uri uri, String drmScheme, String drmLicenseUrl, boolean multiSession, String[] requestHeaders, String preferredAudioLanguage) throws UnsupportedDrmException {
         int audioFocusResult = setupAudio();
         boolean isDrmEnabled = drmScheme != null && drmLicenseUrl != null;
         String audioFocusString = audioFocusResult == AudioManager.AUDIOFOCUS_REQUEST_FAILED ?
@@ -272,6 +272,10 @@ public class Player {
         TrackSelection.Factory trackSelectionFactory = new AdaptiveTrackSelection.Factory();
         DefaultTrackSelector trackSelector = new DefaultTrackSelector(trackSelectionFactory);
         LoadControl loadControl;
+
+        if (preferredAudioLanguage != null) {
+            trackSelector.setParameters(trackSelector.buildUponParameters().setPreferredAudioLanguage(preferredAudioLanguage));
+        }
 
         if (isDrmEnabled)
         {
